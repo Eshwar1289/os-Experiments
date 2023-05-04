@@ -1,0 +1,1011 @@
+UNIT -2 Shell Programming
+
+1. Write a shell script to produce a multiplication table.                                                                                                                                                  #!/bin/bash
+
+# Input from user
+echo "Enter the number -"
+read n
+
+# initializing i with 1
+i=1
+  
+# Looping i, i should be less than
+# or equal to 10 
+while [ $i -le 10 ]
+do
+res=`expr $i \* $n`
+
+# printing on console
+echo "$n * $i = $res"
+ 
+# incrementing i by one  
+((++i))
+  
+# end of while loop  
+done
+
+2. Write a shell script program to implement a small calculator.                                                                                                                                       # !/bin/bash
+
+# Take user Input
+echo "Enter Two numbers : "
+read a
+read b
+
+echo "1. Addition"
+echo "2. Subtraction"
+echo "3. Multiplication"
+echo "4. Division"
+read c
+case $c in
+  1)echo "sum $((a + b))"  ;;
+  2)echo "subtraction $((a - b ))"  ;;
+  3)echo "multiplication $((a * b))" ;;
+  4)echo  "division $((a / b))"  ;;
+  *) echo "enter valid operation"
+esac
+
+3. Write a shell script to display prime numbers up to the given limit.                                                                                                                            #!/bin/bash
+echo "Enter a limit"
+read limit
+echo "prime numbers upto $limit are :"
+echo "1"
+i=2
+while [ $i -le $limit ]
+do
+    flag=1
+    j=2    
+    while [ $j -lt $i ]
+    do
+         rem=$(( $i % $j ))
+        if [ $rem -eq 0 ]
+        then
+          flag=0
+          break
+        fi
+    j=$(( $j+1 ))
+    done
+    if [ $flag -eq 1 ]
+    then
+       echo "$i"
+    fi
+i=$(( $i+1 ))
+done
+
+UNIT -3 FILE MANIPULATION USING SYSTEM CALLS
+
+1. Write a program using system calls to copy half the content of the file to a newly created
+file.
+(a) First half of the file
+(b) Second half of the file
+#include <stdio.h>
+#include <unistd.h>
+#include <fcntl.h>
+
+int main() {
+    // Open the input file for reading
+    int fd = open("original.txt", O_RDONLY);
+
+
+    // Determine the size of the input file
+    int file_size = lseek(fd, 0, SEEK_END);
+    lseek(fd,0,SEEK_SET);
+    // Calculate the midpoint of the input file
+    int midpoint=file_size/2;
+    // Open the output files for writing
+    int first_half_fd = open("first.txt", O_WRONLY|O_CREAT,0777);
+    int second_half_fd = open("second.txt", O_WRONLY|O_CREAT,0777);
+    int n;
+    char buffer[file_size];
+    n=read(fd,buffer,midpoint);
+    write(first_half_fd,buffer,n);
+    lseek(fd,midpoint,SEEK_SET);
+    n=read(fd,buffer,midpoint);
+    write(second_half_fd,buffer,n);
+}
+
+
+2. Write a program using system call to read from console until user enters '$' and print the
+same on a file.                                                                                                                                                                                                                     #include <stdio.h>
+#include <unistd.h>
+#include <fcntl.h>
+
+int main() {
+    // Open the file for writing
+    FILE *fp = fopen("output.txt", "w");
+    if (fp == NULL) {
+        printf("Error opening file.\n");
+        return 1;
+    }
+
+    // Loop until the user enters '$'
+    char line[100];
+    while (1) {
+        // Read a line of input from the console
+        fgets(line, 100, stdin);
+        // If the line is '$', break out of the loop
+        if (line[0] == '$') {
+            break;
+        }
+        // Otherwise, write the line to the file
+        fputs(line, fp);
+    }
+
+    // Close the file
+    fclose(fp);
+
+    return 0;
+}
+
+3. Write a program using system call to read the contents of a file without using char array
+and display the contents on the console. (Do not use any built in functions like sizeof() and
+strlen())                                                                                                                                                                                                                              #include <stdio.h>
+#include <unistd.h>
+#include <fcntl.h>
+
+int main() {
+    int fd = open("filename.txt", O_RDONLY);
+    if (fd < 0) {
+        perror("Error opening file");
+        return 1;
+    }
+
+    // char buffer[1];
+    char buffer;
+    while (read(fd, &buffer, 1) > 0) {
+        write(STDOUT_FILENO, &buffer, 1);
+    }
+
+    close(fd);
+
+    return 0;
+}
+
+UNIT -4 DIRECTORY MANIPULATION USING SYSTEM CALLS
+
+1. Write a program using directory system calls make a directory on desktop and create a file
+inside the directory and list the contents of the directory.                                                                                                                                                #include<unistd.h>
+#include<sys/types.h>
+#include<sys/stat.h>
+#include<stdio.h>
+#include<fcntl.h>
+#include<dirent.h>
+
+int main(int arg,char *argv[]){
+    int ret_val,fd;
+    ret_val=mkdir("mydirdemo",S_IRWXU|S_IRWXO);
+    if(ret_val==-1){    
+        printf("error,dir not found\n");
+        return 0;
+    }
+    
+    fd=open("mydirdemo/mydemo.txt",O_CREAT|O_WRONLY,S_IRWXU,0700);
+    write(fd,"Hey this what it has",20);
+    close(fd);
+    close(ret_val);
+
+    DIR *dp;
+    struct dirent *direntPt;
+    dp=opendir("mydirdemo");
+    if(dp==NULL)
+        printf("error,dir not found\n");
+
+    while((direntPt=readdir(dp))!=NULL)
+    {
+        printf("%s\n",direntPt->d_name);
+    }
+
+    closedir(dp);
+    return 0;
+}
+
+2. Write a program using directory and file manipulation system calls to copy the contents of
+one directory in a newly created directory.
+#include <unistd.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <stdio.h>
+#include <dirent.h>
+#include<string.h>
+#define BUFFER_SIZE 4096
+
+void copy_dir(char *src, char *dest);
+void file_copy(char *dp,char *f_or_d,char *s_path);
+
+int main(int arg,char *argv[]){
+   copy_dir(argv[1], argv[2]);
+}
+
+void copy_dir(char *src, char *dest){
+    DIR *dp;
+    struct dirent *direntPt;
+    dp=opendir(src);
+    if(dp==NULL)
+        printf("error,dir not found\n");
+    mkdir(dest,0777);
+    while((direntPt=readdir(dp))!=NULL)
+    {
+        if(strcmp(direntPt->d_name, ".") == 0 || strcmp(direntPt->d_name, "..") == 0) {
+              continue;
+              }
+        char s_path[PATH_MAX];
+        snprintf(s_path,PATH_MAX,"%s/%s",src,direntPt->d_name);
+        struct stat sb;
+        if (stat(s_path, &sb) == 0) 
+        {
+            if (S_ISREG(sb.st_mode)) 
+            {
+                file_copy(dest,direntPt->d_name,s_path);
+            }                                  
+            else if (S_ISDIR(sb.st_mode)) 
+            {
+               
+                
+                char new_path[PATH_MAX];
+                snprintf(new_path,PATH_MAX,"%s/%s",dest,direntPt->d_name);
+                copy_dir(s_path, new_path);
+             }
+          }
+           else
+           {
+                printf("Cannot access %s\n", src);
+                return;
+                
+           }
+     }
+    closedir(dp);
+}
+
+void file_copy(char *dp, char *f_or_d, char *s_path){
+    int source_fd, dest_fd;
+    int read_size;
+    char buffer[BUFFER_SIZE];
+
+    source_fd = open(s_path, O_RDONLY,0666);
+    char d_path[PATH_MAX];
+    snprintf(d_path,PATH_MAX,"%s/%s",dp,f_or_d);
+
+    dest_fd = open(d_path, O_CREAT | O_WRONLY, 0666);
+
+    while((read_size = read(source_fd, buffer, sizeof(buffer))) > 0) 
+    {
+        write(dest_fd, buffer, read_size);
+    }
+    close(source_fd);
+    close(dest_fd);
+}
+
+UNIT -5 PROCESS MANAGEMENT USING SYSTEM CALLS
+
+1. Write a program using system calls for operation on process to simulate that n fork
+calls create (2^n – 1) child processes.                                                                                                                                                                                #include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <stdlib.h>
+
+int main()
+{
+    int n;
+    printf("enter how many times you want to call the child process: ");
+    scanf("%d",&n);
+    int pid;
+    pid=getpid();
+    printf("current process pid is %d\n",pid);
+    printf("forking a child process \n");
+    for(int i=1;i<=n;i++){  
+        pid=fork();
+        if(pid==0)
+        {
+            printf("child process id: %d and its parent id: %d \n", getpid(),
+            getppid());
+        }
+        else
+        {
+            printf("parent process id %d \n",getpid());
+            wait(NULL);
+        }
+    }
+    return 0;
+}
+
+1. Write a program using systems for operations on processes to create a hierarchy of
+processes P1 → P2 → P3. Also print the id and parent id for each process.                                                                                                                                     #include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <stdlib.h>
+
+int main()
+{
+        fork();
+        fork();
+        fork();
+        wait(NULL);
+        wait(NULL);
+        wait(NULL);
+        printf("Process Created\n");
+}
+
+2. Write a program using system calls for operation on processes to create a hierarchy
+of processes as given in P1 → P2 → P3; P1 → P4 → P5. Also, simulate process p4 as orphan and P5 as zombie.                                                            #include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <stdlib.h>
+
+int main() {
+    pid_t pid1, pid2, pid3, pid4, pid5;
+
+    // create process p1
+    pid1 = getpid();
+    printf("Process p1 (pid %d) is created.\n", pid1);
+
+    // create process p2 as child of p1
+    pid2 = fork();
+    if (pid2 < 0) {
+        fprintf(stderr, "Fork failed.\n");
+        return 1;
+    } else if (pid2 == 0) {
+        // child process (p2)
+        printf("Process p2 (pid %d) is created as child of p1 (pid %d).\n", getpid(), pid1);
+
+        // create process p3 as child of p2
+        pid3 = fork();
+        if (pid3 < 0) {
+            fprintf(stderr, "Fork failed.\n");
+            return 1;
+        } else if (pid3 == 0) {
+            // child process (p3)
+            printf("Process p3 (pid %d) is created as child of p2 (pid %d).\n", getpid(), pid2);
+        } else {
+            // parent process (p2)
+            wait(NULL);
+            printf("Process p3 (pid %d) has terminated.\n", pid3);
+        }
+    } else {
+        // parent process (p1)
+        wait(NULL);
+        printf("Process p2 (pid %d) has terminated.\n", pid2);
+
+        // create process p4 as child of p1
+        pid4 = fork();
+        if (pid4 < 0) {
+            fprintf(stderr, "Fork failed.\n");
+            return 1;
+        } else if (pid4 == 0) {
+            // child process (p4)
+            printf("Process p4 (pid %d) is created as child of p1 (pid %d).\n", getpid(), pid1);
+
+            // simulate an orphan process
+            sleep(5);
+            printf("Process p4 (pid %d) has become an orphan.\n", getpid());
+
+            // create process p5 as child of p4
+            pid5 = fork();
+            if (pid5 < 0) {
+                fprintf(stderr, "Fork failed.\n");
+                return 1;
+            } else if (pid5 == 0) {
+                // child process (p5)
+                printf("Process p5 (pid %d) is created as child of p4 (pid %d).\n", getpid(), pid4);
+                exit(0);
+            } else {
+                // parent process (p4)
+                sleep(10);
+                printf("Process p5 (pid %d) has become a zombie.\n", pid5);
+            }
+        } else {
+            // parent process (p1)
+            wait(NULL);
+            printf("Process p4 (pid %d) has terminated.\n", pid4);
+        }
+    }
+
+    return 0;
+}
+
+3. Write a program using system calls for operation on processes to create a hierarchy
+of processes as given in P1 → P2 → P3→ P4;  P1 → P5 → P6→ P7. Also, simulate process p4 as orphan and P5 as zombie.
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <stdlib.h>
+
+int main() {
+   pid_t pid1, pid2, pid3, pid4, pid5, pid6, pid7;
+
+   pid1 = getpid(); // get PID of parent process
+   printf("P1: PID=%d, PPID=%d\n", pid1, getppid());
+
+   // create P2, P3, and P4 processes
+   pid2 = fork();
+   if (pid2 == 0) { // child process
+      printf("P2: PID=%d, PPID=%d\n", getpid(), getppid());
+      pid3 = fork();
+      if (pid3 == 0) { // child process
+         printf("P3: PID=%d, PPID=%d\n", getpid(), getppid());
+         pid4 = fork();
+         if (pid4 == 0) { // child process
+            printf("P4: PID=%d, PPID=%d\n", getpid(), getppid());
+            sleep(10); // simulate P4 as an orphan process
+            printf("P4: I'm an orphan now!\n");
+         }
+         else { // parent process (P3)
+            wait(NULL); // wait for P4 to finish
+            printf("P3: Done.\n");
+         }  
+      }
+      else { // parent process (P2)
+         wait(NULL); // wait for P3 to finish
+         printf("P2: Done.\n");
+      }
+   } 
+   else { // parent process (P1)
+      // create P5, P6, and P7 processes
+      pid5 = fork();
+      if (pid5 == 0) { // child process
+         printf("P5: PID=%d, PPID=%d\n", getpid(), getppid());
+         pid6 = fork();
+         if (pid6 == 0) { // child process
+            printf("P6: PID=%d, PPID=%d\n", getpid(), getppid());
+            exit(0); // P6 finishes immediately
+         }
+         else { // parent process (P5)
+            wait(NULL); // wait for P6 to finish
+            pid7 = fork();
+            if (pid7 == 0) { // child process
+               printf("P7: PID=%d, PPID=%d\n", getpid(), getppid());
+               // simulate P7 as a zombie
+                printf("P7: I'm a zombie now!\n");
+               exit(0);
+            }  
+             else { // parent process (P5)
+               sleep(20); // simulate delay before exiting
+               printf("P5: Done.\n");
+            }
+         }
+      }
+      else { // parent process (P1)
+         wait(NULL); // wait for P2 to finish
+         wait(NULL); // wait for P5 to finish
+         printf("P1: Done.\n");
+      }
+   }
+
+   return 0;
+}
+
+UNIT -6 Creation of Multithreaded Processes using Pthread Library
+
+1. Write a program using pthread to concatenate the strings, where multiple strings are
+passed to thread function.                                                                                                                                                                                                #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <pthread.h>
+
+#define MAX_SIZE 100
+
+char strings[MAX_SIZE][MAX_SIZE];
+char result[MAX_SIZE * MAX_SIZE];
+
+void *concatenate(void *arg);
+
+int main() {
+    int n;
+    printf("Enter the number of strings: ");
+    scanf("%d", &n);
+
+    printf("Enter the strings: ");
+    for(int i = 0; i < n; i++) {
+        scanf("%s", strings[i]);
+    }
+
+    pthread_t tid;
+    pthread_create(&tid, NULL, concatenate, (void*) n);
+    pthread_join(tid, NULL);
+
+    printf("Concatenated string: %s\n", result);
+
+    return 0;
+}
+
+void *concatenate(void *arg) {
+    int n = (int) arg;
+    strcpy(result, "");
+    for(int i = 0; i < n; i++) {
+        strcat(result, strings[i]);
+    }
+    pthread_exit(NULL);
+}
+
+/*
+Here's how it works:
+
+The main() function prompts the user to enter the number of strings and the strings themselves.
+
+It creates a single thread to concatenate the strings.
+
+It waits for the thread to complete using pthread_join().
+
+It prints the concatenated string to the console.
+
+The concatenate() function takes an integer argument indicating the number of strings to concatenate, and concatenates them using the strcat() function.
+*/
+
+2. Write a program using pthread to find the length of string, where strings are passed
+to thread function.                                                                                                                                                                                                             #include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <string.h>
+
+void *thread_func(void *arg);
+
+int main() {
+    pthread_t tid;
+    char str[100];
+
+    printf("Enter a string: ");
+    scanf("%s", str);
+
+    pthread_create(&tid, NULL, thread_func, (void*) str);
+    pthread_join(tid, NULL);
+
+    return 0;
+}
+
+void *thread_func(void *arg) {
+    char str = (char) arg;
+    int len = strlen(str);
+    printf("The length of the string is: %d\n", len);
+
+    pthread_exit(NULL);
+}
+/*
+Here's how it works:
+
+The main() function prompts the user to enter a string.
+
+It creates a thread using pthread_create(), passing the string as an argument.
+
+It waits for the thread to complete using pthread_join().
+
+The thread function thread_func() takes a string argument, computes the length of the string using the strlen() function, and prints the result to the console.
+
+Note that in this example, we pass the string as an argument to the thread function, but we could also use a global variable to store the string and avoid passing it as an argument.
+However, using global variables can lead to issues with data synchronization and thread safety.
+*/
+
+3. Write a program that performs statistical operations of calculating the average,
+maximum and minimum for a set of numbers. Create three threads where each performs
+their respective operations.
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+
+#define MAX_SIZE 100
+
+int arr[MAX_SIZE];
+int n;
+double avg;
+int max, min;
+
+void *average(void *arg);
+void *maximum(void *arg);
+void *minimum(void *arg);
+
+int main() {
+    printf("Enter the size of the array: ");
+    scanf("%d", &n);
+
+    printf("Enter the elements of the array: ");
+    for(int i = 0; i < n; i++) {
+        scanf("%d", &arr[i]);
+    }
+
+    pthread_t tid[3];
+
+    pthread_create(&tid[0], NULL, average, NULL);
+    pthread_create(&tid[1], NULL, maximum, NULL);
+    pthread_create(&tid[2], NULL, minimum, NULL);
+
+    pthread_join(tid[0], NULL);
+    pthread_join(tid[1], NULL);
+    pthread_join(tid[2], NULL);
+
+    printf("Average: %f\n", avg);
+    printf("Maximum: %d\n", max);
+    printf("Minimum: %d\n", min);
+
+    return 0;
+}
+
+void *average(void *arg) {
+    double sum = 0.0;
+
+    for(int i = 0; i < n; i++) {
+        sum += arr[i];
+    }
+
+    avg = sum / n;
+
+    pthread_exit(NULL);
+}
+
+void *maximum(void *arg) {
+    max = arr[0];
+
+    for(int i = 1; i < n; i++) {
+        if (arr[i] > max) {
+            max = arr[i];
+        }
+    }
+
+    pthread_exit(NULL);
+}
+
+void *minimum(void *arg) {
+    min = arr[0];
+
+    for(int i = 1; i < n; i++) {
+        if (arr[i] < min) {
+            min = arr[i];
+        }
+    }
+
+    pthread_exit(NULL);
+}
+
+/*
+Here's how it works:
+
+The main() function prompts the user to enter the size and elements of the array.
+
+It creates three threads: one to calculate the average, one to find the maximum, and one to find the minimum.
+
+It waits for all three threads to complete using pthread_join().
+
+It prints the calculated average, maximum, and minimum to the console.
+
+The average(), maximum(), and minimum() functions are each responsible for performing their respective operations on the global arr array.
+*/
+
+4. Write a multithreaded program where an array of integers is passed globally and is
+divided into two smaller lists and given as input to two threads. The thread will sort their
+half of the list and will pass the sorted list to a third thread which merges and sorts the
+list. The final sorted list is printed by the parent thread.
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+
+#define MAX_SIZE 100
+
+int arr[MAX_SIZE];
+int n;
+
+void *merge_sort(void *arg);
+void *merge(void *arg);
+
+int main() {
+    printf("Enter the size of the array: ");
+    scanf("%d", &n);
+
+    printf("Enter the elements of the array: ");
+    for(int i = 0; i < n; i++) {
+        scanf("%d", &arr[i]);
+    }
+
+    pthread_t tid[3];
+
+    pthread_create(&tid[0], NULL, merge_sort, (void*) 0);
+    pthread_create(&tid[1], NULL, merge_sort, (void*) 1);
+
+    pthread_join(tid[0], NULL);
+    pthread_join(tid[1], NULL);
+
+    pthread_create(&tid[2], NULL, merge, NULL);
+    pthread_join(tid[2], NULL);
+
+    printf("Sorted array: ");
+    for(int i = 0; i < n; i++) {
+        printf("%d ", arr[i]);
+    }
+
+    printf("\n");
+
+    return 0;
+}
+
+void *merge_sort(void *arg) {
+    int p = (int) arg;
+    int start = p * (n / 2);
+    int end = (p + 1) * (n / 2) - 1;
+    if (p == 1) {
+        end = n - 1;
+    }
+
+    for(int i = start; i <= end; i++) {
+        for(int j = i + 1; j <= end; j++) {
+            if (arr[i] > arr[j]) {
+                int temp = arr[i];
+                arr[i] = arr[j];
+                arr[j] = temp;
+            }
+        }
+    }
+
+    pthread_exit(NULL);
+}
+
+void *merge(void *arg) {
+    int i = 0, j = n / 2, k = 0;
+    int temp_arr[n];
+
+    while (i < n / 2 && j < n) {
+        if (arr[i] <= arr[j]) {
+            temp_arr[k++] = arr[i++];
+        } else {
+            temp_arr[k++] = arr[j++];
+        }
+    }
+
+    while (i < n / 2) {
+        temp_arr[k++] = arr[i++];
+    }
+
+    while (j < n) {
+        temp_arr[k++] = arr[j++];
+    }
+
+    for (i = 0; i < n; i++) {
+        arr[i] = temp_arr[i];
+    }
+
+    pthread_exit(NULL);
+}
+
+/*
+Here's how it works:
+
+The main() function prompts the user to enter the size and elements of the array.
+
+It creates three threads: two to sort the two halves of the array, and one to merge the two sorted halves.
+
+It waits for the two sort threads to complete using pthread_join().
+
+It creates the merge thread and waits for it to complete using pthread_join().
+
+It prints the sorted array to the console.
+
+The merge_sort() function takes an integer argument indicating which half of the array to sort, and sorts the corresponding half of the array using a simple bubble sort algorithm.
+
+The merge() function merges the two sorted halves of the array using a standard merge algorithm, and copies the result back into the global array.
+
+Note that in this example, we use a global array arr to hold the input and output data. This is not generally a good practice, as it can lead to issues with data
+*/
+
+UNIT -7 Process Synchronization using Semaphores/Mutex
+
+1. Implement the producer consumer problem using pthreads and mutex operations.
+Test Cases:
+(a) A producer only produces if buffer is empty and consumer only consumes if some
+content is in the buffer.
+(b) A producer produces(writes) an item in the buffer and consumer
+consumes(deletes) the last produces item in the buffer.
+(c) A producer produces(writes) on the last consumed(deleted) index of the buffer.                                                                                                       #include <stdio.h> 
+#include <pthread.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+#define BUFFER_SIZE 5
+
+int buffer[BUFFER_SIZE];
+int count = 0;
+int in = 0;
+int out = 0;
+
+pthread_mutex_t mutex;
+pthread_cond_t full;
+pthread_cond_t empty;
+
+void *producer(void *arg) {
+    int item;
+
+    while(1) {
+        item = rand() % 10; // Generate a random item
+
+        pthread_mutex_lock(&mutex); // Acquire mutex lock
+
+        // Wait until buffer is full
+        while(count == BUFFER_SIZE) {
+            pthread_cond_wait(&full, &mutex);
+        }
+
+        // Produce an item and add it to buffer
+        buffer[in] = item;
+        in = (in + 1) % BUFFER_SIZE;
+        count++;
+
+        printf("Produced item %d\n", item);
+
+        // Signal consumer that buffer is not empty
+        pthread_cond_signal(&empty);
+
+        pthread_mutex_unlock(&mutex); // Release mutex lock
+    }
+}
+
+void *consumer(void *arg) {
+    int item;
+
+    while(1) {
+        pthread_mutex_lock(&mutex); // Acquire mutex lock
+
+        // Wait until buffer is not empty
+        while(count == 0) {
+            pthread_cond_wait(&empty, &mutex);
+        }
+
+        // Consume an item from buffer
+        item = buffer[out];
+        out = (out + 1) % BUFFER_SIZE;
+        count--;
+
+        printf("Consumed item %d\n", item);
+
+        // Signal producer that buffer is not full
+        pthread_cond_signal(&full);
+
+        pthread_mutex_unlock(&mutex); // Release mutex lock
+    }
+}
+
+void *producer_last_consumed(void *arg) {
+    int item;
+
+    while(1) {
+        item = rand() % 10; // Generate a random item
+
+        pthread_mutex_lock(&mutex); // Acquire mutex lock
+
+        // Wait until buffer is not empty
+        while(count == 0) {
+            pthread_cond_wait(&empty, &mutex);
+        }
+
+        // Produce an item and add it to buffer
+        out = (out + BUFFER_SIZE - 1) % BUFFER_SIZE;
+        buffer[out] = item;
+        count++;
+
+        printf("Produced item %d\n", item);
+
+        // Signal consumer that buffer is not empty
+        pthread_cond_signal(&full);
+
+        pthread_mutex_unlock(&mutex); // Release mutex lock
+    }
+}
+
+int main() {
+    pthread_t prod, cons, prod_last_cons;
+
+    pthread_mutex_init(&mutex, NULL);
+    pthread_cond_init(&full, NULL);
+    pthread_cond_init(&empty, NULL);
+
+    // Create producer and consumer threads
+    pthread_create(&prod, NULL, producer, NULL);
+    pthread_create(&cons, NULL, consumer, NULL);
+    pthread_create(&prod_last_cons, NULL, producer_last_consumed, NULL);
+
+    // Wait for threads to finish
+    pthread_join(prod, NULL);
+    pthread_join(cons, NULL);
+    pthread_join(prod_last_cons, NULL);
+
+    pthread_mutex_destroy(&mutex);
+    pthread_cond_destroy(&full);
+    pthread_cond_destroy(&empty);
+
+    return 0;
+}
+
+2. Implement the reader writer problem using semaphore and mutex operations to
+synchronize n readers active in reader section at a same time, and one writer active at a
+time.
+Test Cases:
+(a) If n readers are active no writer is allowed to write.
+(b) If one writer is writing no other writer should be allowed to read or write on the
+shared variable.                                                                                                                                                                                                                 #include <stdio.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+#define MAX_READERS 5
+
+pthread_mutex_t mutex;
+sem_t rw_mutex;
+int read_count = 0;
+
+void *writer(void *arg) {
+    while(1) {
+        // Wait for writer lock
+        sem_wait(&rw_mutex);
+
+        // Critical section
+        printf("Writer is writing\n");
+        sleep(rand() % 5);
+
+        // Release writer lock
+        sem_post(&rw_mutex);
+    }
+}
+
+void *reader(void *arg) {
+    while(1) {
+        pthread_mutex_lock(&mutex); // Acquire mutex lock
+
+        read_count++; // Increment the reader count
+
+        if(read_count == 1) { // If first reader, lock the writer
+            sem_wait(&rw_mutex);
+        }
+
+        pthread_mutex_unlock(&mutex); // Release mutex lock
+
+        // Critical section
+        printf("Reader is reading\n");
+        sleep(rand() % 5);
+
+        pthread_mutex_lock(&mutex); // Acquire mutex lock
+
+        read_count--; // Decrement the reader count
+
+        if(read_count == 0) { // If last reader, release the writer
+            sem_post(&rw_mutex);
+        }
+
+        pthread_mutex_unlock(&mutex); // Release mutex lock
+    }
+}
+
+int main() {
+    pthread_t read_threads[MAX_READERS], write_thread;
+
+    pthread_mutex_init(&mutex, NULL);
+    sem_init(&rw_mutex, 0, 1);
+
+    // Create reader and writer threads
+    for(int i = 0; i < MAX_READERS; i++) {
+        pthread_create(&read_threads[i], NULL, reader, NULL);
+    }
+
+    pthread_create(&write_thread, NULL, writer, NULL);
+
+    // Wait for threads to finish
+    for(int i = 0; i < MAX_READERS; i++) {
+        pthread_join(read_threads[i], NULL);
+    }
+
+    pthread_join(write_thread, NULL);
+
+    pthread_mutex_destroy(&mutex);
+    sem_destroy(&rw_mutex);
+
+    return 0;
+}
+
+/*
+Explanation:
+
+The rw_mutex semaphore is used to ensure that only one reader or writer is accessing the shared resource at any given time.
+The mutex mutex is used to protect the read_count variable, which keeps track of the number of readers accessing the shared resource.
+The writer thread waits for the rw_mutex semaphore, enters the critical section to write to the shared resource, and releases the rw_mutex semaphore after writing is completed.
+The reader thread acquires the mutex mutex, increments the read_count variable, and if it is the first reader, waits for the rw_mutex semaphore to lock the writer.
+     It then enters the critical section to read from the shared resource, decrements the read_count variable, and if it is the last reader,
+    releases the rw_mutex semaphore to allow the writer to access the shared resource. Finally, it releases the mutex mutex.
+*/
